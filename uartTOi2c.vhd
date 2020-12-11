@@ -211,7 +211,53 @@ begin
                     s_tx_fsm    <= IDLE;
             end case ;
         end if ;
-    end process ; 
+    end process ;
+    
+    uart_wrapper : entity work.uart_16550_wrapper
+        port map(
+            -- general purpose
+            sys_clk_i               =>    s_clk_uart,   -- system clock
+            sys_rst_i               =>    s_rst,        -- system reset
+            -- TX/RX process command line
+            echo_en_i               =>    r_config_addr_uart(0),    -- Echo enable (byte by byte) enable/disable = 1/0
+            tx_addr_wwo_i	        =>    r_config_addr_uart(1),    -- control of TX process With or WithOut address W/WO=(1/0)
+            -- serial I/O side
+            uart_din_i              =>    uart_din_i, 	        -- Serial data INPUT signal (from the FPGA)
+            uart_dout_o             =>    uart_dout_o,  	    -- Serial data OUTPUT signal (to the FPGA)
+            -- parallel I/O side
+            s_br_clk_uart_o         =>    s_uart_br_clk,  		-- br_clk clock probe signal
+            -- RX part/control
+            v_rx_add_o	            =>    s_uart_rx_add,	    -- 16 bits full addr ram input
+            v_rx_data_o	            =>    s_uart_rx_data,  	    -- 32 bits full data ram input
+            s_rx_rdy_o	            =>    s_uart_rx_rdy,  		-- add/data ready to be write into RAM
+            s_rx_stb_read_data_i    => s_uart_rx_stb_read_data,	-- strobe signal from RAM ... 
+            -- TX part/control
+            s_tx_proc_rqst_i        => s_uart_tx_req,	    -- stream TX process request 1/0 tx enable/disable
+            v_tx_add_ram_i          => s_uart_tx_add,		-- 16 bits full addr ram output
+            v_tx_data_ram_i			=> s_uart_tx_data,      -- 32 bits full data ram output
+            s_tx_ram_data_rdy_i		=> s_uart_tx_data_rdy,	-- ram output data ready and stable
+            s_tx_stb_ram_data_acq_o => s_uart_tx_stb_acq	-- strobe ram data/address output acquired 1/0 acquired/not acquired
+        );
+
+    i2c_p : entity work.i2c_master
+        generic map(
+            input_clk   => 29_491_200,  --input clock speed from user logic in Hz
+            bus_clk     => 100_000      --speed the i2c bus (scl) will run at in Hz
+        )
+        port map(
+            clk       =>    s_clk_uart,             --system clock
+            reset_n   =>    s_rst_n,                --active low reset
+            ena       =>    reg01(31),              --latch in command
+            addr      =>    reg01(22 downto 16),    --address of target slave
+            rw        =>    reg01(23),              --'0' is write, '1' is read
+            data_wr   =>    data_wr,                --data to write to slave
+            busy      =>    i2c_busy,               --indicates transaction in progress
+            data_rd   =>    data_rd,                --data read from slave
+            ack_error =>    reg02(30),              --flag if improper acknowledge from slave
+            sda       =>    i2c_dat,                --serial data output of i2c bus
+            scl       =>    i2c_scl                 --serial clock output of i2c bus
+        );
+    
 
 
-end architecture rtl ; -
+end architecture rtl ; 
