@@ -117,5 +117,96 @@ begin
         end if ;
     end process;
 
+    i2c_data_p : process( s_rst, s_clk_uart )
+    begin
+        if s_rst = '1' then
+            reg02(29 downto 0) <= (others => '0');
+        elsif rising_edge(s_clk_uart)  then
+            --when the busy is changed from 1 to 0
+            if (i2c_busy = '0' and i2c_busy_dly = '1') then
+                --copy the I2C data_rd to reg02(7 downto 0)
+                --and copy reg02(7 downto 0) to reg02(15 downto 0)
+                reg02(15 downto 0) <= reg02(7 downto 0) & data_rd;
+            end if ;
+            --bit 15 to 3 is the 13 bit temperature
+            --each 1 equal 0.0625 and 0x0 equal to 0°C
+            --Only need bit 15 to 7 to read out in integer
+            --shift bits to upper bytes for easy read in degree C
+            reg02(24 downto 16) <= reg02(15 downto 7);  
 
+        end if ;
+    end process ;
+    
+    register_update : process(s_rst, s_clk_uart)
+    variable v_uart_tx_add  : unsigned(15 downto 0);
+    variable v_count        : unsigned(15 downto 0);
+    begin
+
+        if s_rst = '1' then             --reset all registers here
+            s_uart_tx_data_rdy  <= '0';
+            s_uart_tx_req       <= '0';
+            v_uart_tx_add       := (others => '0');
+            v_count             := (others => '0');
+            s_uart_tx_data      <= (others => '0');
+            s_uart_tx_add       <= (others => '0');
+            s_tx_fsm            <= IDLE;
+    
+        elsif rising_edge(s_clk_uart) then
+            case( s_tx_fsm ) is
+            
+                when IDLE =>
+                    if s_update = '1' then
+                        s_tx_fsm <= WAIT_A_BYTE;
+                    else
+                        s_uart_tx_data_rdy  <= '0';
+                        s_uart_tx_req       <= '0';
+                        v_uart_tx_add       := (others => '0');
+                        v_count             := (others => '0');
+                        s_uart_tx_data      <= (others => '0');
+                        s_uart_tx_add       <= (others => '0');
+                        s_tx_fsm            <= IDLE;
+                    end if ;
+                
+                when WAIT_A_BYTE =>
+                    s_uart_tx_data_rdy   <= '0';
+                    v_count              := v_count + 1;
+                    if v_count = x"0900" then
+                        v_uart_tx_add   := v_uart_tx_add + 1;
+                        s_tx_fsm        <= LATCH; 
+                    else
+                        s_tx_fsm        <= WAIT_A_BYTE;    
+                    end if ;
+                
+                when LATCH  =>
+                    if s_uart_tx_stb_acq = '0' then
+                        s_uart_tx_req   <= '1';
+                        s_uart_tx_add   <= std_logic_vector(v_uart_tx_add);
+
+                    case(v_uart_tx_add) is
+                    
+                        when x"0001" => s_uart_tx_data(7 downto 0) <= r_ledds;
+                                        s_tx_fsm    <= TRANSMIT;
+                        when x"0010" => s_uart_tx_data <= reg01;
+                                        s_tx_fsm    <= TRANSMIT;
+                        when x"0011" => s_uart_tx_data <= reg02;
+                                        s_tx_fsm    <= TRANSMIT;
+                        
+
+                            
+                    
+                        when others =>
+                    
+                    end case ;
+                        
+                    end if ;
+
+                when others =>
+            
+            end case ;
+            
+        end if ;
+        
+
+        
+    end process ; 
 end architecture rtl ; -
