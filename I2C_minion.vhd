@@ -12,13 +12,6 @@ use ieee.numeric_std.all;
 entity I2C_slave is
   generic (
     MINION_ADDR            : std_logic_vector(6 downto 0);
-    -- noisy SCL/SDA lines can confuse the minion
-    -- use low-pass filter to smooth the signal
-    -- (this might not be necessary!)
-    USE_INPUT_DEBOUNCING   : boolean := false;
-    -- play with different number of wait cycles
-    -- larger wait cycles increase the resource usage
-    DEBOUNCING_WAIT_CYCLES : integer := 4);
   port (
     scl              : inout std_logic;
     sda              : inout std_logic;
@@ -44,13 +37,8 @@ architecture arch of I2C_slave is
 
   signal scl_reg       : std_logic := 'Z';
   signal sda_reg       : std_logic := 'Z';
-  signal scl_debounced : std_logic := 'Z';
-  signal sda_debounced : std_logic := 'Z';
 
-  signal scl_pre_internal : std_logic := 'Z';
-  signal scl_internal     : std_logic := '1';
-  signal sda_pre_internal : std_logic := 'Z';
-  signal sda_internal     : std_logic := '1';
+  signal sda_i         : std_logic;
 
   -- Helpers to figure out next state
   signal start_reg       : std_logic := '0';
@@ -78,73 +66,34 @@ architecture arch of I2C_slave is
   signal data_to_master_reg : std_logic_vector(7 downto 0) := (others => '0');
 begin
 
-  debounce : if USE_INPUT_DEBOUNCING generate
-    -- debounce SCL and SDA
-    SCL_debounce : entity work.debounce
-      generic map (
-        WAIT_CYCLES => DEBOUNCING_WAIT_CYCLES)
-      port map (
-        clk        => clk,
-        signal_in  => scl,
-        signal_out => scl_debounced);
-
-    -- it might not make sense to debounce SDA, since master
-    -- and minion can both write to it...
-    SDA_debounce : entity work.debounce
-      generic map (
-        WAIT_CYCLES => DEBOUNCING_WAIT_CYCLES)
-      port map (
-        clk        => clk,
-        signal_in  => sda,
-        signal_out => sda_debounced);
-
-    scl_pre_internal     <= scl_debounced;
-    sda_pre_internal <= sda_debounced;
-  end generate debounce;
-
-  dont_debounce : if (not USE_INPUT_DEBOUNCING) generate
-    process (clk) is
-    begin
-      if rising_edge(clk) then
-        scl_pre_internal     <= scl;
-        sda_pre_internal <= sda;
-      end if;
-    end process;
-  end generate dont_debounce;
-
-
-  scl_internal <= '0' when scl_pre_internal = '0' else '1';
-  sda_internal <= '0' when sda_pre_internal = '0' else '1';
-
-
   process (clk) is
   begin
     if rising_edge(clk) then
       -- Delay SCL and SDA by 1 clock cycle
-      scl_prev_reg   <= scl_internal;
-      sda_prev_reg   <= sda_internal;
+      scl_prev_reg   <= scl;
+      sda_prev_reg   <= sda;
       -- Detect rising and falling SCL
       scl_rising_reg <= '0';
-      if scl_prev_reg = '0' and scl_internal = '1' then
+      if scl_prev_reg = '0' and scl = 'H' then
         scl_rising_reg <= '1';
       end if;
       scl_falling_reg <= '0';
-      if scl_prev_reg = '1' and scl_internal = '0' then
+      if scl_prev_reg = 'H' and scl = '0' then
         scl_falling_reg <= '1';
       end if;
 
       -- Detect I2C START condition
       start_reg <= '0';
       stop_reg  <= '0';
-      if scl_internal = '1' and scl_prev_reg = '1' and
-        sda_prev_reg = '1' and sda_internal = '0' then
+      if scl = 'H' and scl_prev_reg = 'H' and
+        sda_prev_reg = 'H' and sda = '0' then
         start_reg <= '1';
         stop_reg  <= '0';
       end if;
 
       -- Detect I2C STOP condition
-      if scl_prev_reg = '1' and scl_internal = '1' and
-        sda_prev_reg = '0' and sda_internal = '1' then
+      if scl_prev_reg = 'H' and scl = 'H' and
+        sda_prev_reg = '0' and sda = 'H' then
         start_reg <= '0';
         stop_reg  <= '1';
       end if;
@@ -177,10 +126,10 @@ begin
           if scl_rising_reg = '1' then
             if bits_processed_reg < 7 then
               bits_processed_reg             <= bits_processed_reg + 1;
-              addr_reg(6-bits_processed_reg) <= sda_internal;
+              addr_reg(6-bits_processed_reg) <= sda_i;
             elsif bits_processed_reg = 7 then
               bits_processed_reg <= bits_processed_reg + 1;
-              cmd_reg            <= sda_internal;
+              cmd_reg            <= sda_i;
             end if;
           end if;
 
@@ -221,9 +170,9 @@ begin
           if scl_rising_reg = '1' then
             bits_processed_reg <= bits_processed_reg + 1;
             if bits_processed_reg < 7 then
-              data_reg(6-bits_processed_reg) <= sda_internal;
+              data_reg(6-bits_processed_reg) <= sda_i;
             else
-              data_from_master_reg <= data_reg & sda_internal;
+              data_from_master_reg <= data_reg & sda_i;
               data_valid_reg       <= '1';
             end if;
           end if;
@@ -241,7 +190,7 @@ begin
           if data_to_master_reg(7-bits_processed_reg) = '0' then
             sda_o_reg <= '0';
           else
-            sda_o_reg <= 'Z';
+            sda_o_reg <= 'H';
           end if;
 
           if scl_falling_reg = '1' then
@@ -259,7 +208,7 @@ begin
         when read_ack_start =>
           if scl_rising_reg = '1' then
             state_reg <= read_ack_got_rising;
-            if sda_internal = '1' then  -- nack = stop read
+            if sda = 'H' then  -- nack = stop read
               continue_reg <= '0';
             else  -- ack = continue read
               continue_reg       <= '1';
@@ -316,9 +265,9 @@ begin
   -- I2C interface
   ----------------------------------------------------------
   sda <= sda_o_reg when sda_wen_reg = '1' else
-         'Z';
+         'H';
   scl <= scl_o_reg when scl_wen_reg = '1' else
-         'Z';
+         'H';
   ----------------------------------------------------------
   -- User interface
   ----------------------------------------------------------
@@ -327,4 +276,5 @@ begin
   data_from_master <= data_from_master_reg;
   -- Master reads
   read_req         <= read_req_reg;
+  sda_i            <= '1' when sda = 'H' else '0';
 end architecture arch;

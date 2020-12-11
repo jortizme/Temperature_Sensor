@@ -152,14 +152,7 @@ begin
 
     i2c_slave: entity work.I2C_minion
         generic map(
-            MINION_ADDR     => x"0x48",
-            -- noisy SCL/SDA lines can confuse the minion
-            -- use low-pass filter to smooth the signal
-            -- (this might not be necessary!)
-            USE_INPUT_DEBOUNCING   => false,
-            -- play with different number of wait cycles
-            -- larger wait cycles increase the resource usage
-            DEBOUNCING_WAIT_CYCLES => 4
+            MINION_ADDR     => x"0x48"
         )
         port map(
             scl             => scl,
