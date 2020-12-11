@@ -182,31 +182,36 @@ begin
                         s_uart_tx_req   <= '1';
                         s_uart_tx_add   <= std_logic_vector(v_uart_tx_add);
 
-                    case(v_uart_tx_add) is
-                    
-                        when x"0001" => s_uart_tx_data(7 downto 0) <= r_ledds;
-                                        s_tx_fsm    <= TRANSMIT;
-                        when x"0010" => s_uart_tx_data <= reg01;
-                                        s_tx_fsm    <= TRANSMIT;
-                        when x"0011" => s_uart_tx_data <= reg02;
-                                        s_tx_fsm    <= TRANSMIT;
-                        
-
+                        case(v_uart_tx_add) is
                             
-                    
-                        when others =>
-                    
-                    end case ;
-                        
+                            when x"0001" => s_uart_tx_data(7 downto 0) <= r_ledds;
+                                            s_tx_fsm    <= TRANSMIT;
+                            when x"0010" => s_uart_tx_data <= reg01;
+                                            s_tx_fsm    <= TRANSMIT;
+                            when x"0011" => s_uart_tx_data <= reg02;
+                                            s_tx_fsm    <= TRANSMIT;
+                            --End of Transmission register = last register + 1
+                            when x"0012" => s_tx_fsm    <= IDLE;  --end of transmission
+                            when others =>  s_uart_tx_data      <= (others => '0');
+                                            v_uart_tx_add       := v_uart_tx_add + 1;
+                                            s_uart_tx_data_rdy  <= '0';  
+                                            s_tx_fsm            <= LATCH;
+                        end case ;
+                    else
+                        v_count     := (others => '0');
+                         s_tx_fsm    <= WAIT_A_BYTE;
                     end if ;
 
-                when others =>
-            
-            end case ;
-            
-        end if ;
-        
+                when TRANSMIT =>
+                    s_uart_tx_data_rdy  <= '1';
+                    v_count             := (others => '0');
+                    s_tx_fsm            <= WAIT_A_BYTE;
 
-        
+                when others =>
+                    s_tx_fsm    <= IDLE;
+            end case ;
+        end if ;
     end process ; 
+
+
 end architecture rtl ; -
