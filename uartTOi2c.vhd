@@ -184,7 +184,7 @@ begin
 
                         case(v_uart_tx_add) is
                             
-                            when x"0001" => s_uart_tx_data(7 downto 0) <= r_ledds;
+                            when x"0001" => s_uart_tx_data(7 downto 0) <= r_leds;
                                             s_tx_fsm    <= TRANSMIT;
                             when x"0010" => s_uart_tx_data <= reg01;
                                             s_tx_fsm    <= TRANSMIT;

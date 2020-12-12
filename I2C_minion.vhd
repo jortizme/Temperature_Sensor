@@ -11,7 +11,8 @@ use ieee.numeric_std.all;
 ------------------------------------------------------------
 entity I2C_slave is
   generic (
-    MINION_ADDR            : std_logic_vector(6 downto 0);
+    MINION_ADDR            : std_logic_vector(6 downto 0)
+  );
   port (
     scl              : inout std_logic;
     sda              : inout std_logic;
@@ -21,7 +22,8 @@ entity I2C_slave is
     read_req         : out   std_logic;
     data_to_master   : in    std_logic_vector(7 downto 0);
     data_valid       : out   std_logic;
-    data_from_master : out   std_logic_vector(7 downto 0));
+    data_from_master : out   std_logic_vector(7 downto 0)
+    );
 end entity I2C_slave;
 ------------------------------------------------------------
 architecture arch of I2C_slave is
