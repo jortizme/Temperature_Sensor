@@ -1,6 +1,5 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_unsiged.all;
 use ieee.numeric_std.all;
 
 entity tb_temp_sensor_top is
@@ -36,102 +35,102 @@ architecture behavior of tb_temp_sensor_top is
     constant test_data  : sample_array :=
     (
         --READ TDA7420 ID CMD -1: Write 0xB to I2C address 0x48
-        x"00"        --BYTE1 
-        x"10"        --BYTE2
-        x"80"        --BYTE3
-        x"48"        --BYTE4
-        x"00"        --BYTE5
-        x"0B"        --BYTE6
+        x"00",        --BYTE1 
+        x"10" ,       --BYTE2
+        x"80"  ,      --BYTE3
+        x"48",        --BYTE4
+        x"00",        --BYTE5
+        x"0B" ,       --BYTE6
         --READ ID CMD -2: Read from I2C
-        x"00"        --BYTE1 
-        x"10"        --BYTE2
-        x"80"        --BYTE3
-        x"C8"        --BYTE4
-        x"00"        --BYTE5
-        x"00"        --BYTE6
+        x"00"  ,      --BYTE1 
+        x"10"   ,     --BYTE2
+        x"80" ,       --BYTE3
+        x"C8" ,       --BYTE4
+        x"00" ,       --BYTE5
+        x"00" ,       --BYTE6
         --DUMMY for waiting 
-        x"00"        --BYTE1 
-        x"20"        --BYTE2
-        x"00"        --BYTE3
-        x"00"        --BYTE4
-        x"00"        --BYTE5
-        x"00"        --BYTE6
+        x"00"  ,      --BYTE1 
+        x"20"   ,     --BYTE2
+        x"00"  ,      --BYTE3
+        x"00"    ,    --BYTE4
+        x"00"    ,    --BYTE5
+        x"00"    ,    --BYTE6
         --DUMMY for waiting
-        x"00"        --BYTE1 
-        x"20"        --BYTE2
-        x"00"        --BYTE3
-        x"00"        --BYTE4
-        x"00"        --BYTE5
-        x"00"        --BYTE6
+        x"00"     ,   --BYTE1 
+        x"20"   ,     --BYTE2
+        x"00"  ,      --BYTE3
+        x"00" ,       --BYTE4
+        x"00" ,       --BYTE5
+        x"00"  ,      --BYTE6
         --Read registers to UART
-        x"80"        --BYTE1 
-        x"00"        --BYTE2
-        x"00"        --BYTE3
-        x"00"        --BYTE4
-        x"00"        --BYTE5
-        x"00"        --BYTE6
+        x"80"   ,     --BYTE1 
+        x"00"  ,      --BYTE2
+        x"00"   ,     --BYTE3
+        x"00"    ,    --BYTE4
+        x"00"    ,    --BYTE5
+        x"00"    ,    --BYTE6
         --DUMMY for waiting
-        x"00"        --BYTE1 
-        x"20"        --BYTE2
-        x"00"        --BYTE3
-        x"00"        --BYTE4
-        x"00"        --BYTE5
-        x"00"        --BYTE6
+        x"00"     ,   --BYTE1 
+        x"20"    ,    --BYTE2
+        x"00"    ,    --BYTE3
+        x"00"    ,    --BYTE4
+        x"00"    ,    --BYTE5
+        x"00"    ,    --BYTE6
         --DUMY for waiting
-        x"00"        --BYTE1 
-        x"20"        --BYTE2
-        x"00"        --BYTE3
-        x"00"        --BYTE4
-        x"00"        --BYTE5
-        x"00"        --BYTE6
+        x"00"     ,   --BYTE1 
+        x"20"    ,    --BYTE2
+        x"00"     ,   --BYTE3
+        x"00"    ,    --BYTE4
+        x"00"    ,    --BYTE5
+        x"00"    ,    --BYTE6
         --Reset the ADC write 0x00 to ADT7420 register offset: 0x2F
-        x"00"        --BYTE1 
-        x"10"        --BYTE2
-        x"C0"        --BYTE3
-        x"48"        --BYTE4
-        x"00"        --BYTE5
-        x"2F"        --BYTE6
+        x"00"     ,   --BYTE1 
+        x"10"      ,  --BYTE2
+        x"C0"     ,   --BYTE3
+        x"48"    ,    --BYTE4
+        x"00"     ,   --BYTE5
+        x"2F"     ,   --BYTE6
         --Write 0x80 to offset 0x03 to ADT740 to set 13bit
-        x"00"        --BYTE1 
-        x"10"        --BYTE2
-        x"C0"        --BYTE3
-        x"48"        --BYTE4
-        x"80"        --BYTE5
-        x"03"        --BYTE6
+        x"00"      ,  --BYTE1 
+        x"10"     ,   --BYTE2
+        x"C0"     ,   --BYTE3
+        x"48"     ,   --BYTE4
+        x"80"      ,  --BYTE5
+        x"03"       , --BYTE6
         --dummy
-        x"00"        --BYTE1 
-        x"20"        --BYTE2
-        x"00"        --BYTE3
-        x"00"        --BYTE4
-        x"00"        --BYTE5
-        x"00"        --BYTE6
+        x"00"  ,      --BYTE1 
+        x"20"   ,     --BYTE2
+        x"00"    ,    --BYTE3
+        x"00"     ,   --BYTE4
+        x"00"      ,  --BYTE5
+        x"00"    ,    --BYTE6
         --Read two byte - 1 from I2C address 0x48
-        x"00"        --BYTE1 
-        x"10"        --BYTE2
-        x"80"        --BYTE3
-        x"48"        --BYTE4
-        x"00"        --BYTE5
-        x"00"        --BYTE6
+        x"00"     ,   --BYTE1 
+        x"10"      ,  --BYTE2
+        x"80"   ,     --BYTE3
+        x"48" ,       --BYTE4
+        x"00"  ,      --BYTE5
+        x"00"    ,    --BYTE6
         --Read two byte - 2
-        x"00"        --BYTE1 
-        x"10"        --BYTE2
-        x"C0"        --BYTE3
-        x"C8"        --BYTE4
-        x"00"        --BYTE5
-        x"00"        --BYTE6
+        x"00" ,       --BYTE1 
+        x"10"  ,      --BYTE2
+        x"C0"   ,     --BYTE3
+        x"C8"    ,    --BYTE4
+        x"00"     ,   --BYTE5
+        x"00"      ,  --BYTE6
         --dummy waiting
-        x"00"        --BYTE1 
-        x"20"        --BYTE2
-        x"00"        --BYTE3
-        x"00"        --BYTE4
-        x"00"        --BYTE5
-        x"00"        --BYTE6
+        x"00" ,       --BYTE1 
+        x"20"  ,      --BYTE2
+        x"00"   ,     --BYTE3
+        x"00"    ,    --BYTE4
+        x"00"     ,   --BYTE5
+        x"00"      ,  --BYTE6
         --Read back from I2C
-        x"80"        --BYTE1 
-        x"00"        --BYTE2
-        x"00"        --BYTE3
-        x"00"        --BYTE4
-        x"00"        --BYTE5
+        x"80"   ,     --BYTE1 
+        x"00"    ,    --BYTE2
+        x"00"     ,   --BYTE3
+        x"00"      ,  --BYTE4
+        x"00"       , --BYTE5
         x"00"        --BYTE6
     );
 
@@ -141,18 +140,22 @@ begin
     uut : entity work.temperature_sensor_top
         port map(
             SYS_CLK     => sys_clk_i,
-            USER_LED    => uart_leds_emu,
-            GPIO_J3_39  => uart_dout_emu,
-            GPIO_J3_40  => uart_din_emu,
+            
+
             ADT7420_CT  => '0', --Not use
-            ADT7420_INT => '0', Not
+            ADT7420_INT => '0', --Not in use
             ADT7420_SCL => scl, --I2C SCL
-            ADT7420_SDA => sda  --I2C SDA 
+            ADT7420_SDA => sda,  --I2C SDA 
+        
+            USER_LED    => uart_leds_emu,
+
+            GPIO_J3_39  => uart_dout_emu,
+            GPIO_J3_40  => uart_din_emu
         );
 
-    i2c_slave: entity work.I2C_minion
+    i2c_minion: entity work.I2C_minion
         generic map(
-            MINION_ADDR     => x"0x48"
+            MINION_ADDR     => "1001000"
         )
         port map(
             scl             => scl,
